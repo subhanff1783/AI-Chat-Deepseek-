@@ -512,7 +512,7 @@
 
 // ========== Auto Cache Buster ==========
 // If app version changed, wipe stale settings automatically
-var APP_VERSION = '3.0';
+var APP_VERSION = '4.0';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   // Clear only settings — keep chat history
   localStorage.removeItem('ai_settings');
@@ -546,7 +546,7 @@ function loadFromLS(key, def) {
 // ========== Init ==========
 function init() {
   // Load persisted data
-  var defaultSettings = { apiKey: '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', model: 'deepseek/deepseek-r1', temperature: 0.7 };
+  var defaultSettings = { apiKey: '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', model: 'deepseek/deepseek-r1', temperature: 0.7 };
   state.settings = loadFromLS('ai_settings', defaultSettings);
   // If admin has not manually overridden, always enforce hardcoded key+model
   // (prevents stale localStorage from a prior broken version causing auth errors)
@@ -1164,7 +1164,7 @@ if (document.readyState === 'loading') {
 // ══════════════════════════════════════════════
 (function() {
 
-  var HARDCODED_KEY   = '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';
+  var HARDCODED_KEY   = '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';
   var HARDCODED_MODEL = 'deepseek/deepseek-r1';
   var DEFAULT_ADMIN_PASSWORD = 'admin1234'; // Change this!
   var tapCount = 0;
