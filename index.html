@@ -350,7 +350,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Model</label>
-        <input id="model-input" type="text" placeholder="deepseek/deepseek-r1:free" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" />
+        <input id="model-input" type="text" placeholder="deepseek/deepseek-r1" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" />
         <p class="text-xs text-gray-400 mt-1">Browse models at <a href="https://openrouter.ai/models" target="_blank" class="text-gemini-500 hover:underline">openrouter.ai/models</a></p>
       </div>
       <div class="flex items-center justify-between">
@@ -481,10 +481,15 @@
 
     <div class="flex gap-2 pt-1">
       <button onclick="saveAdminSettings()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Save Changes</button>
-      <button onclick="closeAdminSettings()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+      <button onclick="testAdminConnection()" class="py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5" id="test-conn-btn">
+        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Test
+      </button>
+      <button onclick="closeAdminSettings()" class="py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
     </div>
 
     <p id="admin-save-msg" class="text-xs text-green-600 dark:text-green-400 text-center hidden">✓ Settings saved successfully</p>
+    <p id="admin-test-msg" class="text-xs text-center hidden"></p>
   </div>
 </div>
 
@@ -505,11 +510,21 @@
 (function() {
 'use strict';
 
+// ========== Auto Cache Buster ==========
+// If app version changed, wipe stale settings automatically
+var APP_VERSION = '3.0';
+if (localStorage.getItem('app_version') !== APP_VERSION) {
+  // Clear only settings — keep chat history
+  localStorage.removeItem('ai_settings');
+  localStorage.removeItem('admin_overridden');
+  localStorage.setItem('app_version', APP_VERSION);
+}
+
 // ========== State ==========
 var state = {
   chats: {},
   currentChatId: null,
-  settings: { apiKey: '', model: 'deepseek/deepseek-r1:free', temperature: 0.7 },
+  settings: { apiKey: '', model: 'deepseek/deepseek-r1', temperature: 0.7 },
   systemPrompt: '',
   dark: false,
   streaming: false,
@@ -531,11 +546,16 @@ function loadFromLS(key, def) {
 // ========== Init ==========
 function init() {
   // Load persisted data
-  var defaultSettings = { apiKey: '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', model: 'deepseek/deepseek-r1', temperature: 0.7 };
+  var defaultSettings = { apiKey: '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', model: 'deepseek/deepseek-r1', temperature: 0.7 };
   state.settings = loadFromLS('ai_settings', defaultSettings);
-  // Always ensure default key/model if user never changed them
-  if (!state.settings.apiKey) state.settings.apiKey = defaultSettings.apiKey;
-  if (!state.settings.model) state.settings.model = defaultSettings.model;
+  // If admin has not manually overridden, always enforce hardcoded key+model
+  // (prevents stale localStorage from a prior broken version causing auth errors)
+  if (!loadFromLS('admin_overridden', false)) {
+    state.settings.apiKey = defaultSettings.apiKey;
+    state.settings.model  = defaultSettings.model;
+  }
+  if (!state.settings.temperature) state.settings.temperature = defaultSettings.temperature;
+  saveToLS('ai_settings', state.settings);
   state.chats    = loadFromLS('ai_chats', {});
   state.dark     = loadFromLS('ai_dark', false);
   state.systemPrompt = loadFromLS('ai_sysprompt', '');
@@ -977,7 +997,7 @@ window.sendMessage = async function() {
         'X-Title': 'Universal AI Chat'
       },
       body: JSON.stringify({
-        model: state.settings.model || 'deepseek/deepseek-r1:free',
+        model: state.settings.model || 'deepseek/deepseek-r1',
         messages: messages,
         stream: true,
         temperature: parseFloat(state.settings.temperature) || 0.7
@@ -987,7 +1007,19 @@ window.sendMessage = async function() {
     if (!resp.ok) {
       var errJson;
       try { errJson = await resp.json(); } catch(e2) {}
-      var errMsg = (errJson && errJson.error && errJson.error.message) ? errJson.error.message : 'HTTP ' + resp.status;
+      var rawMsg = (errJson && errJson.error && errJson.error.message) ? errJson.error.message : '';
+      var errMsg;
+      if (resp.status === 401 || rawMsg.toLowerCase().includes('user not found') || rawMsg.toLowerCase().includes('invalid api key') || rawMsg.toLowerCase().includes('unauthorized')) {
+        errMsg = '🔑 Invalid API key. Please contact the administrator.';
+      } else if (resp.status === 402 || rawMsg.toLowerCase().includes('credit') || rawMsg.toLowerCase().includes('billing')) {
+        errMsg = '💳 API account has insufficient credits. Please contact the administrator.';
+      } else if (resp.status === 429 || rawMsg.toLowerCase().includes('rate limit')) {
+        errMsg = '⏱ Too many requests. Please wait a moment and try again.';
+      } else if (resp.status === 404 || rawMsg.toLowerCase().includes('model') || rawMsg.toLowerCase().includes('not found')) {
+        errMsg = '🤖 Model not found. The AI model may have changed — please contact the administrator.';
+      } else {
+        errMsg = rawMsg || ('Request failed: HTTP ' + resp.status);
+      }
       throw new Error(errMsg);
     }
 
@@ -1065,7 +1097,7 @@ window.openSettings = function() {
   var modal = document.getElementById('settings-modal');
   if (!modal) return;
   document.getElementById('api-key-input').value = state.settings.apiKey || '';
-  document.getElementById('model-input').value = state.settings.model || 'deepseek/deepseek-r1:free';
+  document.getElementById('model-input').value = state.settings.model || 'deepseek/deepseek-r1';
   var tempInput = document.getElementById('temp-input');
   var tempVal = document.getElementById('temp-val');
   if (tempInput) tempInput.value = state.settings.temperature || 0.7;
@@ -1081,7 +1113,7 @@ window.saveSettings = function() {
   var model = document.getElementById('model-input');
   var temp = document.getElementById('temp-input');
   state.settings.apiKey = key ? key.value.trim() : '';
-  state.settings.model = (model && model.value.trim()) || 'deepseek/deepseek-r1:free';
+  state.settings.model = (model && model.value.trim()) || 'deepseek/deepseek-r1';
   state.settings.temperature = temp ? parseFloat(temp.value) : 0.7;
   saveToLS('ai_settings', state.settings);
   closeSettings();
@@ -1132,6 +1164,8 @@ if (document.readyState === 'loading') {
 // ══════════════════════════════════════════════
 (function() {
 
+  var HARDCODED_KEY   = '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';
+  var HARDCODED_MODEL = 'deepseek/deepseek-r1';
   var DEFAULT_ADMIN_PASSWORD = 'admin1234'; // Change this!
   var tapCount = 0;
   var tapTimer = null;
@@ -1232,8 +1266,8 @@ if (document.readyState === 'loading') {
     var newPw   = document.getElementById('admin-new-password');
     var saveMsg = document.getElementById('admin-save-msg');
 
-    if (keyEl)   keyEl.value   = settings.apiKey || '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';
-    if (modelEl) modelEl.value = settings.model   || 'deepseek/deepseek-r1';
+    if (keyEl)   keyEl.value   = settings.apiKey || HARDCODED_KEY;
+    if (modelEl) modelEl.value = settings.model   || HARDCODED_MODEL;
     if (tempEl)  { tempEl.value = settings.temperature || 0.7; }
     if (tempVal) tempVal.textContent = settings.temperature || 0.7;
     if (newPw)   newPw.value   = '';
@@ -1261,8 +1295,11 @@ if (document.readyState === 'loading') {
       temperature: tempEl ? parseFloat(tempEl.value) : 0.7
     };
 
-    // Save to localStorage
-    try { localStorage.setItem('ai_settings', JSON.stringify(newSettings)); } catch(e) {}
+    // Save to localStorage — mark as admin-overridden so hardcoded defaults don't clobber it
+    try {
+      localStorage.setItem('ai_settings', JSON.stringify(newSettings));
+      localStorage.setItem('admin_overridden', JSON.stringify(true));
+    } catch(e) {}
 
     // Update password if provided
     if (newPwEl && newPwEl.value.trim()) {
@@ -1284,7 +1321,73 @@ if (document.readyState === 'loading') {
     setTimeout(function() { closeAdminSettings(); }, 1500);
   };
 
-  // ── Toggle API key visibility ────────────────
+  // ── Test Connection ──────────────────────────
+  window.testAdminConnection = async function() {
+    var keyEl   = document.getElementById('admin-api-key');
+    var modelEl = document.getElementById('admin-model');
+    var btn     = document.getElementById('test-conn-btn');
+    var msg     = document.getElementById('admin-test-msg');
+    if (!keyEl || !modelEl || !msg) return;
+
+    var key   = keyEl.value.trim();
+    var model = modelEl.value.trim() || 'deepseek/deepseek-r1';
+
+    if (!key) {
+      msg.className = 'text-xs text-center text-red-500';
+      msg.textContent = '✗ Please enter an API key first.';
+      msg.classList.remove('hidden');
+      return;
+    }
+
+    // Loading state
+    if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Testing…'; }
+    msg.classList.add('hidden');
+
+    try {
+      var resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key,
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'Universal AI Chat'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', content: 'Hi' }],
+          max_tokens: 5,
+          stream: false
+        })
+      });
+
+      var data;
+      try { data = await resp.json(); } catch(e) {}
+
+      if (resp.ok && data && data.choices) {
+        msg.className = 'text-xs text-center text-green-600 dark:text-green-400';
+        msg.textContent = '✓ Connection successful! API key and model are valid.';
+      } else if (resp.status === 401 || (data && data.error && (data.error.message||'').toLowerCase().includes('user not found'))) {
+        msg.className = 'text-xs text-center text-red-500';
+        msg.textContent = '✗ Invalid API key — "User not found". Please check your key at openrouter.ai/keys';
+      } else if (resp.status === 404 || (data && data.error && (data.error.message||'').toLowerCase().includes('model'))) {
+        msg.className = 'text-xs text-center text-amber-600';
+        msg.textContent = '⚠ API key OK, but model "' + model + '" not found. Try adding :free suffix.';
+      } else if (resp.status === 402) {
+        msg.className = 'text-xs text-center text-amber-600';
+        msg.textContent = '⚠ API key valid but account has no credits. Add credits at openrouter.ai';
+      } else {
+        var errTxt = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + resp.status);
+        msg.className = 'text-xs text-center text-red-500';
+        msg.textContent = '✗ Error: ' + errTxt;
+      }
+    } catch(e) {
+      msg.className = 'text-xs text-center text-red-500';
+      msg.textContent = '✗ Network error: ' + (e.message || 'Could not reach OpenRouter');
+    }
+
+    msg.classList.remove('hidden');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test'; }
+  };
   window.toggleAdminKeyVisibility = function() {
     var input = document.getElementById('admin-api-key');
     if (!input) return;
@@ -1433,4 +1536,3 @@ if (document.readyState === 'loading') {
 </script>
 </body>
 </html>
-
