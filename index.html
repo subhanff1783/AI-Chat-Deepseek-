@@ -225,7 +225,8 @@
     <!-- Sidebar Header -->
     <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+        <!-- Secret admin trigger: click logo 5 times -->
+        <div id="admin-trigger" class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center cursor-pointer select-none" onclick="handleAdminTap()" title="">
           <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
         </div>
         <span class="font-semibold text-sm text-gray-800 dark:text-gray-200">AI Chat</span>
@@ -248,10 +249,7 @@
 
     <!-- Sidebar Footer -->
     <div class="border-t border-gray-200 dark:border-gray-800 p-3 space-y-1">
-      <button onclick="openSettings()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-        Settings
-      </button>
+
       <button onclick="openSystemPrompt()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         System Prompt
@@ -337,8 +335,8 @@
   </div>
 </div>
 
-<!-- ===================== SETTINGS MODAL ===================== -->
-<div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop bg-black/50">
+<!-- Settings Modal HIDDEN — admin only, not accessible to users -->
+<div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop bg-black/50" style="display:none!important">
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-lg font-semibold">Settings</h2>
@@ -398,6 +396,95 @@
       <button onclick="confirmRename()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Rename</button>
       <button onclick="closeRenameModal()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN PASSWORD MODAL ===================== -->
+<div id="admin-auth-modal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 modal-backdrop bg-black/60">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-5">
+    <div class="text-center space-y-2">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mx-auto">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Admin Access</h2>
+      <p class="text-xs text-gray-400">Enter admin password to continue</p>
+    </div>
+    <div>
+      <input id="admin-password-input" type="password" placeholder="Password"
+        class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors text-center tracking-widest"
+        onkeydown="if(event.key==='Enter')verifyAdminPassword()" />
+      <p id="admin-auth-error" class="text-xs text-red-500 text-center mt-1.5 hidden">Incorrect password</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="closeAdminAuth()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+      <button onclick="verifyAdminPassword()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN SETTINGS MODAL ===================== -->
+<div id="admin-settings-modal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 modal-backdrop bg-black/60">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Admin Settings</h2>
+          <p class="text-xs text-gray-400">Hidden from regular users</p>
+        </div>
+      </div>
+      <button onclick="closeAdminSettings()" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-3.5 py-2.5">
+      <p class="text-xs text-amber-700 dark:text-amber-400">⚠️ Changes apply immediately for all users. Keep this password safe.</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">OpenRouter API Key</label>
+        <div class="relative">
+          <input id="admin-api-key" type="password"
+            class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors font-mono"
+            placeholder="sk-or-v1-..." />
+          <button onclick="toggleAdminKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" id="admin-key-eye">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Model</label>
+        <input id="admin-model" type="text"
+          class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors"
+          placeholder="deepseek/deepseek-r1" />
+        <p class="text-xs text-gray-400 mt-1">Browse at <a href="https://openrouter.ai/models" target="_blank" class="text-gemini-500 hover:underline">openrouter.ai/models</a></p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Temperature <span id="admin-temp-val" class="text-gemini-500 ml-1">0.7</span></label>
+        <input id="admin-temp" type="range" min="0" max="2" step="0.1" value="0.7"
+          class="w-full accent-gemini-500"
+          oninput="document.getElementById('admin-temp-val').textContent=this.value" />
+        <div class="flex justify-between text-xs text-gray-400 mt-0.5"><span>Precise</span><span>Balanced</span><span>Creative</span></div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Change Admin Password</label>
+        <div class="flex gap-2">
+          <input id="admin-new-password" type="password" placeholder="New password (leave blank to keep)"
+            class="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2 pt-1">
+      <button onclick="saveAdminSettings()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Save Changes</button>
+      <button onclick="closeAdminSettings()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+    </div>
+
+    <p id="admin-save-msg" class="text-xs text-green-600 dark:text-green-400 text-center hidden">✓ Settings saved successfully</p>
   </div>
 </div>
 
@@ -472,6 +559,9 @@ function init() {
   } else {
     showWelcome();
   }
+
+  // Expose state for admin panel live access
+  window._appState = state;
 
   // Configure marked
   if (window.marked) {
@@ -859,10 +949,9 @@ window.sendMessage = async function() {
   inp.value = ''; inp.style.height = 'auto';
   scrollToBottom();
 
-  // Check API key
+  // API key is pre-configured — show friendly error if somehow missing
   if (!state.settings.apiKey) {
-    openSettings();
-    showError('Please set your OpenRouter API key first.');
+    showError('API key not configured. Please contact the app administrator.');
     return;
   }
 
@@ -1037,7 +1126,177 @@ if (document.readyState === 'loading') {
 })();
 
 // ══════════════════════════════════════════════
-//   PWA — Service Worker & Install Prompt
+//   ADMIN PANEL — Secret Access System
+//   Trigger: Click the logo icon 5 times fast
+//   Password stored in localStorage (hashed)
+// ══════════════════════════════════════════════
+(function() {
+
+  var DEFAULT_ADMIN_PASSWORD = 'admin1234'; // Change this!
+  var tapCount = 0;
+  var tapTimer = null;
+
+  // ── Secret tap handler (logo click ×5) ──────
+  window.handleAdminTap = function() {
+    tapCount++;
+    clearTimeout(tapTimer);
+
+    // Visual feedback — briefly pulse the logo
+    var trigger = document.getElementById('admin-trigger');
+    if (trigger) {
+      trigger.style.transform = 'scale(1.2)';
+      setTimeout(function() { trigger.style.transform = ''; }, 150);
+    }
+
+    if (tapCount >= 5) {
+      tapCount = 0;
+      clearTimeout(tapTimer);
+      openAdminAuth();
+      return;
+    }
+
+    // Reset tap count after 2 seconds of no taps
+    tapTimer = setTimeout(function() { tapCount = 0; }, 2000);
+  };
+
+  // ── Password helpers (simple hash) ──────────
+  function hashPassword(pw) {
+    // Simple djb2 hash — good enough for client-side obscurity
+    var hash = 5381;
+    for (var i = 0; i < pw.length; i++) {
+      hash = ((hash << 5) + hash) + pw.charCodeAt(i);
+      hash = hash & hash; // Convert to 32-bit int
+    }
+    return 'adm_' + Math.abs(hash).toString(36);
+  }
+
+  function getStoredHash() {
+    return localStorage.getItem('admin_pw_hash') || hashPassword(DEFAULT_ADMIN_PASSWORD);
+  }
+
+  // ── Open auth modal ──────────────────────────
+  window.openAdminAuth = function() {
+    var modal = document.getElementById('admin-auth-modal');
+    var input = document.getElementById('admin-password-input');
+    var err   = document.getElementById('admin-auth-error');
+    if (!modal) return;
+    if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 100); }
+    if (err) err.classList.add('hidden');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  };
+
+  window.closeAdminAuth = function() {
+    var modal = document.getElementById('admin-auth-modal');
+    if (modal) { modal.classList.add('hidden'); modal.style.display = ''; }
+    tapCount = 0;
+  };
+
+  window.verifyAdminPassword = function() {
+    var input = document.getElementById('admin-password-input');
+    var err   = document.getElementById('admin-auth-error');
+    if (!input) return;
+    var entered = input.value;
+    if (!entered) return;
+
+    if (hashPassword(entered) === getStoredHash()) {
+      closeAdminAuth();
+      openAdminSettings();
+    } else {
+      if (err) {
+        err.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+        // Shake animation
+        input.style.animation = 'none';
+        input.offsetHeight; // reflow
+        input.style.animation = 'shake 0.4s ease';
+      }
+    }
+  };
+
+  // ── Admin Settings modal ─────────────────────
+  window.openAdminSettings = function() {
+    var modal = document.getElementById('admin-settings-modal');
+    if (!modal) return;
+
+    // Load current values
+    var settings = (function() {
+      try { return JSON.parse(localStorage.getItem('ai_settings')) || {}; } catch(e) { return {}; }
+    })();
+
+    var keyEl   = document.getElementById('admin-api-key');
+    var modelEl = document.getElementById('admin-model');
+    var tempEl  = document.getElementById('admin-temp');
+    var tempVal = document.getElementById('admin-temp-val');
+    var newPw   = document.getElementById('admin-new-password');
+    var saveMsg = document.getElementById('admin-save-msg');
+
+    if (keyEl)   keyEl.value   = settings.apiKey || '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';
+    if (modelEl) modelEl.value = settings.model   || 'deepseek/deepseek-r1';
+    if (tempEl)  { tempEl.value = settings.temperature || 0.7; }
+    if (tempVal) tempVal.textContent = settings.temperature || 0.7;
+    if (newPw)   newPw.value   = '';
+    if (saveMsg) saveMsg.classList.add('hidden');
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  };
+
+  window.closeAdminSettings = function() {
+    var modal = document.getElementById('admin-settings-modal');
+    if (modal) { modal.classList.add('hidden'); modal.style.display = ''; }
+  };
+
+  window.saveAdminSettings = function() {
+    var keyEl   = document.getElementById('admin-api-key');
+    var modelEl = document.getElementById('admin-model');
+    var tempEl  = document.getElementById('admin-temp');
+    var newPwEl = document.getElementById('admin-new-password');
+    var saveMsg = document.getElementById('admin-save-msg');
+
+    var newSettings = {
+      apiKey:      (keyEl   && keyEl.value.trim())   || '',
+      model:       (modelEl && modelEl.value.trim())  || 'deepseek/deepseek-r1',
+      temperature: tempEl ? parseFloat(tempEl.value) : 0.7
+    };
+
+    // Save to localStorage
+    try { localStorage.setItem('ai_settings', JSON.stringify(newSettings)); } catch(e) {}
+
+    // Update password if provided
+    if (newPwEl && newPwEl.value.trim()) {
+      localStorage.setItem('admin_pw_hash', hashPassword(newPwEl.value.trim()));
+    }
+
+    // Update live state if app is running
+    if (window._appState) {
+      window._appState.settings = newSettings;
+    }
+
+    // Show success message
+    if (saveMsg) {
+      saveMsg.classList.remove('hidden');
+      setTimeout(function() { saveMsg.classList.add('hidden'); }, 2500);
+    }
+
+    // Close after short delay
+    setTimeout(function() { closeAdminSettings(); }, 1500);
+  };
+
+  // ── Toggle API key visibility ────────────────
+  window.toggleAdminKeyVisibility = function() {
+    var input = document.getElementById('admin-api-key');
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  };
+
+  // Shake animation style
+  var style = document.createElement('style');
+  style.textContent = '@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 60%{transform:translateX(8px)} 80%{transform:translateX(-4px)} }';
+  document.head.appendChild(style);
+
+})();
 // ══════════════════════════════════════════════
 (function() {
 
