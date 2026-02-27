@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Universal AI Chat</title>
+
+  <!-- ══════════════════════════════════════════════
+       PWA — Progressive Web App Meta Tags
+       Enables "Install App" on mobile & desktop
+  ══════════════════════════════════════════════ -->
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- iOS / Safari PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="AI Chat" />
+  <link rel="apple-touch-icon" href="icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="72x72"   href="icons/icon-72x72.png" />
+  <link rel="apple-touch-icon" sizes="96x96"   href="icons/icon-96x96.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png" />
+
+  <!-- Android / Chrome -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#4f76f6" id="theme-color-meta" />
+
+  <!-- Windows / Edge -->
+  <meta name="msapplication-TileColor" content="#4f76f6" />
+  <meta name="msapplication-TileImage" content="icons/icon-144x144.png" />
+
+  <!-- General -->
+  <meta name="description" content="Universal AI Chat powered by OpenRouter — hundreds of AI models in one app." />
+  <meta name="application-name" content="AI Chat" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png" />
+  <link rel="shortcut icon" href="icons/icon-96x96.png" />
+
+  <!-- Prevent phone number formatting -->
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- CDN Resources -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['DM Sans', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            gemini: { 50:'#f0f4ff', 100:'#e0eaff', 500:'#4f76f6', 600:'#3d62e8', 700:'#2d4fd4' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+    .dark ::-webkit-scrollbar-thumb { background: #374151; }
+
+    /* Sidebar transition */
+    #sidebar {
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1), width 0.28s cubic-bezier(.4,0,.2,1);
+    }
+    #sidebar-overlay {
+      transition: opacity 0.25s ease;
+    }
+
+    /* Typing cursor */
+    .typing-cursor::after {
+      content: '▋';
+      display: inline-block;
+      animation: blink 0.7s step-end infinite;
+      color: #4f76f6;
+      font-size: 0.9em;
+      vertical-align: -1px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* Markdown prose */
+    .prose-content p { margin: 0 0 0.75em; line-height: 1.7; }
+    .prose-content p:last-child { margin-bottom: 0; }
+    .prose-content ul, .prose-content ol { padding-left: 1.4em; margin: 0.5em 0 0.75em; }
+    .prose-content li { margin-bottom: 0.25em; line-height: 1.6; }
+    .prose-content h1,.prose-content h2,.prose-content h3 { font-weight: 600; margin: 0.9em 0 0.4em; line-height: 1.3; }
+    .prose-content h1 { font-size: 1.3em; }
+    .prose-content h2 { font-size: 1.15em; }
+    .prose-content h3 { font-size: 1.05em; }
+    .prose-content code:not(pre code) {
+      background: #f3f4f6; padding: 0.15em 0.4em; border-radius: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.83em;
+    }
+    .dark .prose-content code:not(pre code) { background: #1e293b; color: #e2e8f0; }
+    .prose-content pre {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 10px;
+      padding: 1em 1.2em; overflow-x: auto; margin: 0.6em 0;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.82em;
+      line-height: 1.6; position: relative;
+    }
+    .prose-content pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+    .prose-content blockquote {
+      border-left: 3px solid #4f76f6; padding-left: 0.9em; margin: 0.7em 0;
+      color: #6b7280; font-style: italic;
+    }
+    .dark .prose-content blockquote { color: #9ca3af; }
+    .prose-content a { color: #4f76f6; text-decoration: underline; }
+    .prose-content table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 0.9em; }
+    .prose-content th, .prose-content td { border: 1px solid #e5e7eb; padding: 0.4em 0.7em; text-align: left; }
+    .dark .prose-content th, .dark .prose-content td { border-color: #374151; }
+    .prose-content th { background: #f9fafb; font-weight: 600; }
+    .dark .prose-content th { background: #1f2937; }
+
+    /* Message fade-in */
+    .msg-enter { animation: msgIn 0.22s ease both; }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    /* Input auto-grow */
+    #user-input { resize: none; min-height: 44px; max-height: 200px; overflow-y: auto; }
+
+    /* Sidebar item active */
+    .chat-item.active { background: #e8eeff; }
+    .dark .chat-item.active { background: #1e2a4a; }
+
+    /* Mobile safe area */
+    .input-bar-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+    /* Modal backdrop blur */
+    .modal-backdrop { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+
+    /* Gradient welcome */
+    .welcome-gradient {
+      background: linear-gradient(135deg, #4f76f6 0%, #a78bfa 50%, #f472b6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body class="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+
+<!-- PWA Install Banner -->
+<div id="install-banner" class="fixed bottom-0 left-0 right-0 z-[200] hidden">
+  <div class="mx-4 mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4 flex items-center gap-3">
+    <img src="icons/icon-72x72.png" alt="App Icon" class="w-10 h-10 rounded-xl flex-shrink-0" />
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Install AI Chat</p>
+      <p class="text-xs text-gray-400 mt-0.5">Add to home screen for the best experience</p>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <button onclick="dismissInstall()" class="px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Later</button>
+      <button onclick="triggerInstall()" class="px-3 py-1.5 rounded-lg bg-gemini-500 hover:bg-gemini-600 text-white text-xs font-medium transition-colors">Install</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS Install Instructions (Safari doesn't support beforeinstallprompt) -->
+<div id="ios-install-modal" class="fixed inset-0 z-[300] hidden flex items-end justify-center p-4 bg-black/50 modal-backdrop">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="icons/icon-72x72.png" alt="App Icon" class="w-10 h-10 rounded-xl" />
+        <div>
+          <p class="font-semibold text-gray-900 dark:text-gray-100">Install AI Chat</p>
+          <p class="text-xs text-gray-400">Add to Home Screen</p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('ios-install-modal').classList.add('hidden')" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <ol class="space-y-3">
+      <li class="flex items-start gap-3">
+        <span class="w-6 h-6 rounded-full bg-gemini-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">1</span>
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          Tap the <strong>Share</strong> button
+          <svg class="inline w-4 h-4 mx-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          at the bottom of Safari
+        </div>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="w-6 h-6 rounded-full bg-gemini-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">2</span>
+        <p class="text-sm text-gray-700 dark:text-gray-300">Scroll down and tap <strong>"Add to Home Screen"</strong></p>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="w-6 h-6 rounded-full bg-gemini-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">3</span>
+        <p class="text-sm text-gray-700 dark:text-gray-300">Tap <strong>"Add"</strong> in the top right corner</p>
+      </li>
+    </ol>
+    <p class="text-xs text-gray-400 text-center">The app will appear on your home screen like a native app</p>
+  </div>
+</div>
+
+<!-- Loading fallback -->
+<div id="loading" class="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950 z-[9999]">
+  <div class="flex flex-col items-center gap-3">
+    <div class="w-8 h-8 rounded-full border-2 border-gemini-500 border-t-transparent animate-spin"></div>
+    <span class="text-sm text-gray-500">Loading App…</span>
+  </div>
+</div>
+
+<!-- App Shell -->
+<div id="app" class="flex" style="height:100dvh;min-height:100vh;display:flex;opacity:0;transition:opacity .3s">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden opacity-0" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="fixed md:relative z-30 flex flex-col bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-full"
+    style="width:260px;min-width:260px;transform:translateX(-100%);height:100dvh;min-height:100vh;">
+
+    <!-- Sidebar Header -->
+    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+        </div>
+        <span class="font-semibold text-sm text-gray-800 dark:text-gray-200">AI Chat</span>
+      </div>
+      <button onclick="closeSidebar()" class="md:hidden p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- New Chat -->
+    <div class="px-3 py-3">
+      <button onclick="newChat()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        New Chat
+      </button>
+    </div>
+
+    <!-- Chat List -->
+    <div class="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5" id="chat-list"></div>
+
+    <!-- Sidebar Footer -->
+    <div class="border-t border-gray-200 dark:border-gray-800 p-3 space-y-1">
+      <button onclick="openSettings()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        Settings
+      </button>
+      <button onclick="openSystemPrompt()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        System Prompt
+      </button>
+      <button onclick="toggleDark()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 transition-colors">
+        <svg id="dark-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <span id="dark-label">Dark Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex flex-col flex-1 min-w-0" style="height:100dvh;min-height:100vh;">
+
+    <!-- Top Bar -->
+    <header class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
+      <button onclick="openSidebar()" class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors -ml-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 id="chat-title" class="text-sm font-semibold truncate text-gray-800 dark:text-gray-200">New Chat</h1>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="clearCurrentChat()" title="Clear chat" class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Messages Area -->
+    <div id="messages" class="flex-1 overflow-y-auto px-4 py-6 space-y-6" style="scroll-behavior:smooth;">
+
+      <!-- Welcome Screen -->
+      <div id="welcome" class="flex flex-col items-center justify-center h-full text-center py-16 gap-5">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+          <svg class="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-semibold mb-2">
+            <span class="welcome-gradient">Hello, how can I help?</span>
+          </h2>
+          <p class="text-gray-400 text-sm max-w-xs">Powered by OpenRouter — supports hundreds of AI models</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-2 max-w-sm w-full">
+          <button onclick="sendSuggestion('Explain quantum computing simply')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">
+            Explain quantum computing simply
+          </button>
+          <button onclick="sendSuggestion('Write a Python web scraper')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">
+            Write a Python web scraper
+          </button>
+          <button onclick="sendSuggestion('What are the best productivity habits?')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">
+            Best productivity habits
+          </button>
+          <button onclick="sendSuggestion('Create a creative short story idea')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">
+            Creative short story idea
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar-wrap flex-shrink-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-4 py-3">
+      <div class="max-w-3xl mx-auto">
+        <div class="flex items-end gap-2 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2.5 border border-gray-200 dark:border-gray-700 focus-within:border-gemini-500 transition-colors">
+          <textarea
+            id="user-input"
+            placeholder="Message AI…"
+            rows="1"
+            class="flex-1 bg-transparent outline-none resize-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 leading-relaxed"
+            onkeydown="handleKeyDown(event)"
+            oninput="autoGrow(this)"
+          ></textarea>
+          <button id="send-btn" onclick="sendMessage()" class="flex-shrink-0 w-9 h-9 rounded-xl bg-gemini-500 hover:bg-gemini-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white flex items-center justify-center transition-colors" title="Send">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-7-7l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <p class="text-center text-xs text-gray-400 mt-2">AI can make mistakes. Verify important info.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SETTINGS MODAL ===================== -->
+<div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop bg-black/50">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Settings</h2>
+      <button onclick="closeSettings()" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">OpenRouter API Key</label>
+        <input id="api-key-input" type="password" placeholder="sk-or-v1-..." class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" />
+        <p class="text-xs text-gray-400 mt-1">Get your key at <a href="https://openrouter.ai/keys" target="_blank" class="text-gemini-500 hover:underline">openrouter.ai/keys</a></p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Model</label>
+        <input id="model-input" type="text" placeholder="deepseek/deepseek-r1:free" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" />
+        <p class="text-xs text-gray-400 mt-1">Browse models at <a href="https://openrouter.ai/models" target="_blank" class="text-gemini-500 hover:underline">openrouter.ai/models</a></p>
+      </div>
+      <div class="flex items-center justify-between">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Temperature</label>
+        <div class="flex items-center gap-2">
+          <input id="temp-input" type="range" min="0" max="2" step="0.1" value="0.7" class="w-24 accent-gemini-500" oninput="document.getElementById('temp-val').textContent=this.value">
+          <span id="temp-val" class="text-sm text-gray-500 w-6">0.7</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button onclick="saveSettings()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Save</button>
+      <button onclick="closeSettings()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SYSTEM PROMPT MODAL ===================== -->
+<div id="sysprompt-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop bg-black/50">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">System Prompt</h2>
+      <button onclick="closeSystemPrompt()" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Global System Prompt</label>
+      <textarea id="sysprompt-input" rows="7" placeholder="You are a helpful AI assistant..." class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 resize-none transition-colors"></textarea>
+      <p class="text-xs text-gray-400 mt-1">Applied globally to all new chats.</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="saveSystemPrompt()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Save</button>
+      <button onclick="clearSystemPrompt()" class="py-2.5 px-3 rounded-xl border border-red-200 dark:border-red-900 text-red-500 text-sm hover:bg-red-50 dark:hover:bg-red-950 transition-colors">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RENAME MODAL ===================== -->
+<div id="rename-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop bg-black/50">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+    <h2 class="text-lg font-semibold">Rename Chat</h2>
+    <input id="rename-input" type="text" placeholder="Chat name..." class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-gemini-500 transition-colors" onkeydown="if(event.key==='Enter')confirmRename()" />
+    <div class="flex gap-2">
+      <button onclick="confirmRename()" class="flex-1 py-2.5 rounded-xl bg-gemini-500 hover:bg-gemini-600 text-white text-sm font-medium transition-colors">Rename</button>
+      <button onclick="closeRenameModal()" class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu" class="fixed z-50 hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1.5 min-w-36">
+  <button id="ctx-rename" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
+    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+    Rename
+  </button>
+  <button id="ctx-delete" class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    Delete
+  </button>
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+(function() {
+'use strict';
+
+// ========== State ==========
+var state = {
+  chats: {},
+  currentChatId: null,
+  settings: { apiKey: '', model: 'deepseek/deepseek-r1:free', temperature: 0.7 },
+  systemPrompt: '',
+  dark: false,
+  streaming: false,
+  renamingChatId: null,
+  ctxChatId: null
+};
+
+// ========== Storage Helpers ==========
+function saveToLS(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+function loadFromLS(key, def) {
+  try {
+    var v = localStorage.getItem(key);
+    return v !== null ? JSON.parse(v) : def;
+  } catch(e) { return def; }
+}
+
+// ========== Init ==========
+function init() {
+  // Load persisted data
+  var defaultSettings = { apiKey: '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', model: 'deepseek/deepseek-r1', temperature: 0.7 };
+  state.settings = loadFromLS('ai_settings', defaultSettings);
+  // Always ensure default key/model if user never changed them
+  if (!state.settings.apiKey) state.settings.apiKey = defaultSettings.apiKey;
+  if (!state.settings.model) state.settings.model = defaultSettings.model;
+  state.chats    = loadFromLS('ai_chats', {});
+  state.dark     = loadFromLS('ai_dark', false);
+  state.systemPrompt = loadFromLS('ai_sysprompt', '');
+  state.currentChatId = loadFromLS('ai_current', null);
+
+  // Apply dark mode
+  applyDark();
+
+  // Ensure valid current chat
+  if (!state.currentChatId || !state.chats[state.currentChatId]) {
+    if (Object.keys(state.chats).length > 0) {
+      state.currentChatId = Object.keys(state.chats).sort(function(a,b){ return (state.chats[b].updatedAt||0)-(state.chats[a].updatedAt||0); })[0];
+    } else {
+      state.currentChatId = null;
+    }
+  }
+
+  renderSidebar();
+  if (state.currentChatId && state.chats[state.currentChatId]) {
+    renderMessages(state.currentChatId);
+  } else {
+    showWelcome();
+  }
+
+  // Configure marked
+  if (window.marked) {
+    marked.setOptions({ breaks: true, gfm: true });
+  }
+
+  // Mobile: sidebar closed by default
+  var mq = window.matchMedia('(min-width: 768px)');
+  function checkMQ() {
+    if (mq.matches) { openSidebar(true); }
+    else { closeSidebar(true); }
+  }
+  mq.addEventListener ? mq.addEventListener('change', checkMQ) : mq.addListener(checkMQ);
+  checkMQ();
+
+  // Close ctx menu on click outside
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('ctx-menu');
+    if (menu && !menu.contains(e.target)) hideCtxMenu();
+  });
+
+  // Hide loading, show app
+  document.getElementById('loading').style.display = 'none';
+  var app = document.getElementById('app');
+  app.style.opacity = '1';
+}
+
+// ========== Dark Mode ==========
+function applyDark() {
+  if (state.dark) {
+    document.documentElement.classList.add('dark');
+    document.getElementById('dark-label').textContent = 'Light Mode';
+    document.getElementById('dark-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"/>';
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.getElementById('dark-label').textContent = 'Dark Mode';
+    document.getElementById('dark-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+  }
+}
+window.toggleDark = function() {
+  state.dark = !state.dark;
+  saveToLS('ai_dark', state.dark);
+  applyDark();
+};
+
+// ========== Sidebar ==========
+window.openSidebar = function(instant) {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  if (!sb || !ov) return;
+  sb.style.transform = 'translateX(0)';
+  var mq = window.matchMedia('(min-width: 768px)');
+  if (!mq.matches) {
+    ov.classList.remove('hidden');
+    setTimeout(function(){ ov.style.opacity = '1'; }, 10);
+  }
+};
+window.closeSidebar = function(instant) {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  if (!sb || !ov) return;
+  var mq = window.matchMedia('(min-width: 768px)');
+  if (!mq.matches) {
+    sb.style.transform = 'translateX(-100%)';
+    ov.style.opacity = '0';
+    setTimeout(function(){ ov.classList.add('hidden'); }, 250);
+  }
+};
+
+// ========== Chat Management ==========
+function generateId() {
+  return 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+window.newChat = function() {
+  var id = generateId();
+  state.chats[id] = { id: id, title: 'New Chat', messages: [], createdAt: Date.now(), updatedAt: Date.now() };
+  state.currentChatId = id;
+  saveToLS('ai_chats', state.chats);
+  saveToLS('ai_current', id);
+  renderSidebar();
+  showWelcome();
+  updateChatTitle('New Chat');
+  closeSidebar();
+  focusInput();
+};
+
+window.switchChat = function(id) {
+  if (!state.chats[id]) return;
+  state.currentChatId = id;
+  saveToLS('ai_current', id);
+  renderSidebar();
+  renderMessages(id);
+  updateChatTitle(state.chats[id].title);
+  closeSidebar();
+};
+
+window.clearCurrentChat = function() {
+  if (!state.currentChatId || !state.chats[state.currentChatId]) return;
+  if (!confirm('Clear all messages in this chat?')) return;
+  state.chats[state.currentChatId].messages = [];
+  state.chats[state.currentChatId].updatedAt = Date.now();
+  saveToLS('ai_chats', state.chats);
+  showWelcome();
+};
+
+function deleteChat(id) {
+  if (!state.chats[id]) return;
+  delete state.chats[id];
+  saveToLS('ai_chats', state.chats);
+  if (state.currentChatId === id) {
+    var ids = Object.keys(state.chats);
+    if (ids.length > 0) {
+      state.currentChatId = ids.sort(function(a,b){ return (state.chats[b].updatedAt||0)-(state.chats[a].updatedAt||0); })[0];
+      renderMessages(state.currentChatId);
+      updateChatTitle(state.chats[state.currentChatId].title);
+    } else {
+      state.currentChatId = null;
+      showWelcome();
+      updateChatTitle('New Chat');
+    }
+    saveToLS('ai_current', state.currentChatId);
+  }
+  renderSidebar();
+}
+
+// ========== Context Menu ==========
+function showCtxMenu(e, chatId) {
+  e.preventDefault(); e.stopPropagation();
+  state.ctxChatId = chatId;
+  var menu = document.getElementById('ctx-menu');
+  if (!menu) return;
+  menu.classList.remove('hidden');
+  var x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+  var y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+  menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+  menu.style.top  = Math.min(y, window.innerHeight - 100) + 'px';
+  document.getElementById('ctx-rename').onclick = function() { hideCtxMenu(); openRenameModal(chatId); };
+  document.getElementById('ctx-delete').onclick = function() { hideCtxMenu(); deleteChat(chatId); };
+}
+function hideCtxMenu() {
+  var menu = document.getElementById('ctx-menu');
+  if (menu) menu.classList.add('hidden');
+}
+
+// ========== Rename ==========
+window.openRenameModal = function(chatId) {
+  state.renamingChatId = chatId;
+  var modal = document.getElementById('rename-modal');
+  var input = document.getElementById('rename-input');
+  if (!modal || !input) return;
+  input.value = (state.chats[chatId] && state.chats[chatId].title) || '';
+  modal.classList.remove('hidden');
+  input.focus(); input.select();
+};
+window.closeRenameModal = function() {
+  var modal = document.getElementById('rename-modal');
+  if (modal) modal.classList.add('hidden');
+  state.renamingChatId = null;
+};
+window.confirmRename = function() {
+  var input = document.getElementById('rename-input');
+  if (!input || !state.renamingChatId || !state.chats[state.renamingChatId]) return;
+  var name = input.value.trim() || 'Chat';
+  state.chats[state.renamingChatId].title = name;
+  saveToLS('ai_chats', state.chats);
+  if (state.renamingChatId === state.currentChatId) updateChatTitle(name);
+  renderSidebar();
+  closeRenameModal();
+};
+
+// ========== Sidebar Render ==========
+function renderSidebar() {
+  var list = document.getElementById('chat-list');
+  if (!list) return;
+  var ids = Object.keys(state.chats).sort(function(a,b){
+    return (state.chats[b].updatedAt||0) - (state.chats[a].updatedAt||0);
+  });
+  if (ids.length === 0) {
+    list.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 px-2">No chats yet</p>';
+    return;
+  }
+  list.innerHTML = ids.map(function(id) {
+    var chat = state.chats[id];
+    var isActive = id === state.currentChatId;
+    var title = escHtml(chat.title || 'Chat');
+    var lastMsg = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length-1] : null;
+    var preview = lastMsg ? escHtml((lastMsg.content||'').slice(0,50)) : 'No messages';
+    return '<div class="chat-item group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ' + (isActive ? 'active' : '') + '" onclick="switchChat(\'' + id + '\')" oncontextmenu="showCtxMenu(event,\'' + id + '\')">'
+      + '<div class="flex-1 min-w-0">'
+      + '<div class="text-sm font-medium truncate text-gray-800 dark:text-gray-200">' + title + '</div>'
+      + '<div class="text-xs text-gray-400 truncate mt-0.5">' + preview + '</div>'
+      + '</div>'
+      + '<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex-shrink-0" onclick="event.stopPropagation();showCtxMenu(event,\'' + id + '\')">'
+      + '<svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+      + '</button>'
+      + '</div>';
+  }).join('');
+}
+
+function updateChatTitle(title) {
+  var el = document.getElementById('chat-title');
+  if (el) el.textContent = title || 'New Chat';
+}
+
+// ========== Messages Render ==========
+function showWelcome() {
+  var msgs = document.getElementById('messages');
+  if (!msgs) return;
+  msgs.innerHTML = document.querySelector('#welcome') ? document.querySelector('#welcome').outerHTML : '';
+  // Rebuild welcome if it was removed
+  msgs.innerHTML = `
+    <div id="welcome" class="flex flex-col items-center justify-center h-full text-center py-16 gap-5">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+        <svg class="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div>
+        <h2 class="text-2xl font-semibold mb-2"><span class="welcome-gradient">Hello, how can I help?</span></h2>
+        <p class="text-gray-400 text-sm max-w-xs">Powered by OpenRouter — supports hundreds of AI models</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-2 max-w-sm w-full">
+        <button onclick="sendSuggestion('Explain quantum computing simply')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">Explain quantum computing simply</button>
+        <button onclick="sendSuggestion('Write a Python web scraper')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">Write a Python web scraper</button>
+        <button onclick="sendSuggestion('What are the best productivity habits?')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">Best productivity habits</button>
+        <button onclick="sendSuggestion('Create a creative short story idea')" class="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 transition-colors">Creative short story idea</button>
+      </div>
+    </div>`;
+}
+
+function renderMessages(chatId) {
+  var chat = state.chats[chatId];
+  if (!chat || !chat.messages || chat.messages.length === 0) { showWelcome(); return; }
+  var msgs = document.getElementById('messages');
+  if (!msgs) return;
+  msgs.innerHTML = '';
+  chat.messages.forEach(function(msg) {
+    appendMessageToDOM(msg.role, msg.content, false);
+  });
+  scrollToBottom();
+}
+
+function appendMessageToDOM(role, content, animate) {
+  var msgs = document.getElementById('messages');
+  if (!msgs) return null;
+
+  // Remove welcome if present
+  var welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  var isUser = role === 'user';
+  var wrap = document.createElement('div');
+  wrap.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + (animate ? ' msg-enter' : '');
+
+  var inner = document.createElement('div');
+  inner.className = 'max-w-[85%] md:max-w-[70%]';
+
+  if (isUser) {
+    inner.innerHTML = '<div class="bg-gemini-500 text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm leading-relaxed">' + escHtml(content) + '</div>';
+  } else {
+    var bubble = document.createElement('div');
+    bubble.className = 'flex items-start gap-2.5';
+
+    var avatar = document.createElement('div');
+    avatar.className = 'w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center mt-0.5';
+    avatar.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+    var textWrap = document.createElement('div');
+    textWrap.className = 'bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-gray-800 dark:text-gray-200 prose-content';
+    textWrap.innerHTML = renderMarkdown(content);
+
+    bubble.appendChild(avatar);
+    bubble.appendChild(textWrap);
+    inner.appendChild(bubble);
+  }
+
+  wrap.appendChild(inner);
+  msgs.appendChild(wrap);
+  return isUser ? null : inner.querySelector('.prose-content, div:last-child');
+}
+
+function createStreamingMessage() {
+  var msgs = document.getElementById('messages');
+  if (!msgs) return null;
+  var welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  var wrap = document.createElement('div');
+  wrap.className = 'flex justify-start msg-enter';
+  wrap.id = 'streaming-msg';
+
+  var inner = document.createElement('div');
+  inner.className = 'max-w-[85%] md:max-w-[70%]';
+
+  var bubble = document.createElement('div');
+  bubble.className = 'flex items-start gap-2.5';
+
+  var avatar = document.createElement('div');
+  avatar.className = 'w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center mt-0.5';
+  avatar.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+  var textWrap = document.createElement('div');
+  textWrap.id = 'stream-text';
+  textWrap.className = 'bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-gray-800 dark:text-gray-200 prose-content typing-cursor';
+  textWrap.innerHTML = '';
+
+  bubble.appendChild(avatar);
+  bubble.appendChild(textWrap);
+  inner.appendChild(bubble);
+  wrap.appendChild(inner);
+  msgs.appendChild(wrap);
+  scrollToBottom();
+  return textWrap;
+}
+
+// ========== Markdown ==========
+function renderMarkdown(text) {
+  if (!text) return '';
+  try {
+    return marked.parse(String(text));
+  } catch(e) {
+    return escHtml(String(text));
+  }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ========== Scroll ==========
+function scrollToBottom() {
+  var msgs = document.getElementById('messages');
+  if (msgs) setTimeout(function(){ msgs.scrollTop = msgs.scrollHeight; }, 30);
+}
+
+// ========== Input ==========
+window.handleKeyDown = function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+};
+window.autoGrow = function(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+};
+function focusInput() { var inp = document.getElementById('user-input'); if (inp) setTimeout(function(){ inp.focus(); }, 100); }
+
+window.sendSuggestion = function(text) {
+  var inp = document.getElementById('user-input');
+  if (inp) { inp.value = text; autoGrow(inp); }
+  sendMessage();
+};
+
+// ========== Send Message ==========
+window.sendMessage = async function() {
+  if (state.streaming) return;
+  var inp = document.getElementById('user-input');
+  if (!inp) return;
+  var text = inp.value.trim();
+  if (!text) return;
+
+  // Ensure we have a chat
+  if (!state.currentChatId || !state.chats[state.currentChatId]) {
+    var id = generateId();
+    state.chats[id] = { id:id, title: text.slice(0,40)||'Chat', messages:[], createdAt:Date.now(), updatedAt:Date.now() };
+    state.currentChatId = id;
+    saveToLS('ai_current', id);
+    updateChatTitle(state.chats[id].title);
+    renderSidebar();
+  }
+
+  var chat = state.chats[state.currentChatId];
+
+  // Auto-title from first message
+  if (chat.messages.length === 0) {
+    chat.title = text.slice(0, 45) + (text.length > 45 ? '…' : '');
+    updateChatTitle(chat.title);
+    renderSidebar();
+  }
+
+  // Add user message
+  chat.messages.push({ role:'user', content:text });
+  chat.updatedAt = Date.now();
+  saveToLS('ai_chats', state.chats);
+
+  appendMessageToDOM('user', text, true);
+  inp.value = ''; inp.style.height = 'auto';
+  scrollToBottom();
+
+  // Check API key
+  if (!state.settings.apiKey) {
+    openSettings();
+    showError('Please set your OpenRouter API key first.');
+    return;
+  }
+
+  // Stream response
+  var streamEl = createStreamingMessage();
+  state.streaming = true;
+  setSendDisabled(true);
+
+  var fullText = '';
+  var rawBuffer = '';
+
+  try {
+    var messages = [];
+    if (state.systemPrompt) messages.push({ role:'system', content:state.systemPrompt });
+    chat.messages.forEach(function(m) { messages.push({ role:m.role, content:m.content }); });
+
+    var resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.settings.apiKey,
+        'HTTP-Referer': window.location.href,
+        'X-Title': 'Universal AI Chat'
+      },
+      body: JSON.stringify({
+        model: state.settings.model || 'deepseek/deepseek-r1:free',
+        messages: messages,
+        stream: true,
+        temperature: parseFloat(state.settings.temperature) || 0.7
+      })
+    });
+
+    if (!resp.ok) {
+      var errJson;
+      try { errJson = await resp.json(); } catch(e2) {}
+      var errMsg = (errJson && errJson.error && errJson.error.message) ? errJson.error.message : 'HTTP ' + resp.status;
+      throw new Error(errMsg);
+    }
+
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+
+    while (true) {
+      var result = await reader.read();
+      if (result.done) break;
+      rawBuffer += decoder.decode(result.value, { stream: true });
+      var lines = rawBuffer.split('\n');
+      rawBuffer = lines.pop();
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line || line === 'data: [DONE]') continue;
+        if (line.startsWith('data: ')) {
+          try {
+            var json = JSON.parse(line.slice(6));
+            var delta = json && json.choices && json.choices[0] && json.choices[0].delta;
+            var token = (delta && delta.content) ? delta.content : '';
+            if (token) {
+              fullText += token;
+              if (streamEl) {
+                streamEl.innerHTML = renderMarkdown(fullText);
+                scrollToBottom();
+              }
+            }
+          } catch(parseErr) {}
+        }
+      }
+    }
+  } catch(err) {
+    fullText = fullText || ('Error: ' + (err.message || 'Something went wrong'));
+    if (streamEl) { streamEl.innerHTML = '<span class="text-red-500">' + escHtml(fullText) + '</span>'; }
+  }
+
+  // Finalize
+  if (streamEl) {
+    streamEl.classList.remove('typing-cursor');
+    streamEl.innerHTML = renderMarkdown(fullText || '…');
+  }
+  var streaming = document.getElementById('streaming-msg');
+  if (streaming) streaming.id = '';
+
+  // Save AI response
+  var aiText = fullText || '…';
+  chat.messages.push({ role:'assistant', content:aiText });
+  chat.updatedAt = Date.now();
+  saveToLS('ai_chats', state.chats);
+  renderSidebar();
+
+  state.streaming = false;
+  setSendDisabled(false);
+  scrollToBottom();
+  focusInput();
+};
+
+function setSendDisabled(disabled) {
+  var btn = document.getElementById('send-btn');
+  if (btn) btn.disabled = disabled;
+}
+
+function showError(msg) {
+  var msgs = document.getElementById('messages');
+  if (!msgs) return;
+  var div = document.createElement('div');
+  div.className = 'flex justify-center';
+  div.innerHTML = '<div class="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 px-4 py-2.5 rounded-xl text-xs border border-red-200 dark:border-red-800 max-w-sm text-center">' + escHtml(msg) + '</div>';
+  msgs.appendChild(div);
+  scrollToBottom();
+}
+
+// ========== Settings ==========
+window.openSettings = function() {
+  var modal = document.getElementById('settings-modal');
+  if (!modal) return;
+  document.getElementById('api-key-input').value = state.settings.apiKey || '';
+  document.getElementById('model-input').value = state.settings.model || 'deepseek/deepseek-r1:free';
+  var tempInput = document.getElementById('temp-input');
+  var tempVal = document.getElementById('temp-val');
+  if (tempInput) tempInput.value = state.settings.temperature || 0.7;
+  if (tempVal) tempVal.textContent = state.settings.temperature || 0.7;
+  modal.classList.remove('hidden');
+};
+window.closeSettings = function() {
+  var modal = document.getElementById('settings-modal');
+  if (modal) modal.classList.add('hidden');
+};
+window.saveSettings = function() {
+  var key = document.getElementById('api-key-input');
+  var model = document.getElementById('model-input');
+  var temp = document.getElementById('temp-input');
+  state.settings.apiKey = key ? key.value.trim() : '';
+  state.settings.model = (model && model.value.trim()) || 'deepseek/deepseek-r1:free';
+  state.settings.temperature = temp ? parseFloat(temp.value) : 0.7;
+  saveToLS('ai_settings', state.settings);
+  closeSettings();
+};
+
+// ========== System Prompt ==========
+window.openSystemPrompt = function() {
+  var modal = document.getElementById('sysprompt-modal');
+  var inp = document.getElementById('sysprompt-input');
+  if (!modal || !inp) return;
+  inp.value = state.systemPrompt || '';
+  modal.classList.remove('hidden');
+};
+window.closeSystemPrompt = function() {
+  var modal = document.getElementById('sysprompt-modal');
+  if (modal) modal.classList.add('hidden');
+};
+window.saveSystemPrompt = function() {
+  var inp = document.getElementById('sysprompt-input');
+  state.systemPrompt = (inp && inp.value) ? inp.value.trim() : '';
+  saveToLS('ai_sysprompt', state.systemPrompt);
+  closeSystemPrompt();
+};
+window.clearSystemPrompt = function() {
+  var inp = document.getElementById('sysprompt-input');
+  if (inp) inp.value = '';
+  state.systemPrompt = '';
+  saveToLS('ai_sysprompt', '');
+  closeSystemPrompt();
+};
+
+// ========== Expose context menu ==========
+window.showCtxMenu = showCtxMenu;
+
+// ========== Kick it off ==========
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+
+// ══════════════════════════════════════════════
+//   PWA — Service Worker & Install Prompt
+// ══════════════════════════════════════════════
+(function() {
+
+  var deferredPrompt = null;
+  var installDismissed = false;
+
+  // ── Service Worker Registration ──────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js')
+        .then(function(reg) {
+          console.log('[PWA] Service Worker registered:', reg.scope);
+
+          // Check for SW updates
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[PWA] New version available — will update on next visit');
+                }
+              });
+            }
+          });
+        })
+        .catch(function(err) {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    });
+  }
+
+  // ── Install Prompt (Android/Chrome/Edge Desktop) ──
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // Show install banner after 3 seconds if not dismissed
+    setTimeout(function() {
+      if (!installDismissed && !isInStandaloneMode()) {
+        showInstallBanner();
+      }
+    }, 3000);
+  });
+
+  // ── App Installed Event ──
+  window.addEventListener('appinstalled', function() {
+    console.log('[PWA] App installed successfully!');
+    hideInstallBanner();
+    deferredPrompt = null;
+    // Update theme color for standalone mode
+    updateThemeColor();
+  });
+
+  // ── iOS Detection ──
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  function isInStandaloneMode() {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.includes('android-app://')
+    );
+  }
+
+  // Show iOS install instructions for Safari users
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (isIOS() && !isInStandaloneMode() && !installDismissed) {
+        // Only show on first visit — track with localStorage
+        var shownBefore = localStorage.getItem('ios_install_shown');
+        if (!shownBefore) {
+          document.getElementById('ios-install-modal').classList.remove('hidden');
+          localStorage.setItem('ios_install_shown', '1');
+        }
+      }
+    }, 4000);
+  });
+
+  // ── Banner Controls ──
+  function showInstallBanner() {
+    var banner = document.getElementById('install-banner');
+    if (banner) {
+      banner.classList.remove('hidden');
+      banner.style.animation = 'slideUp 0.3s ease both';
+    }
+  }
+
+  function hideInstallBanner() {
+    var banner = document.getElementById('install-banner');
+    if (banner) banner.classList.add('hidden');
+  }
+
+  window.triggerInstall = function() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result) {
+      console.log('[PWA] Install choice:', result.outcome);
+      deferredPrompt = null;
+      hideInstallBanner();
+    });
+  };
+
+  window.dismissInstall = function() {
+    installDismissed = true;
+    hideInstallBanner();
+    localStorage.setItem('install_dismissed', '1');
+  };
+
+  // ── Theme color sync with dark mode ──
+  function updateThemeColor() {
+    var meta = document.getElementById('theme-color-meta');
+    if (!meta) return;
+    var isDark = document.documentElement.classList.contains('dark');
+    meta.content = isDark ? '#0f172a' : '#4f76f6';
+  }
+
+  // Observe dark mode class changes
+  var observer = new MutationObserver(updateThemeColor);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+  // Check if install was previously dismissed
+  if (localStorage.getItem('install_dismissed')) {
+    installDismissed = true;
+  }
+
+  // Slideup animation
+  var style = document.createElement('style');
+  style.textContent = '@keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }';
+  document.head.appendChild(style);
+
+})();
+</script>
+</body>
+</html>
